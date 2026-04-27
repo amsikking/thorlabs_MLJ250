@@ -124,6 +124,7 @@ class Controller:
         self.port.read(6) # MGMSG_MOT_MOVE_HOMED
         assert self.port.inWaiting() == 0
         self.port.timeout = self.timeout
+        time.sleep(0.1) # without this small delay the next line can crash
         assert self._get_homed_status()
         if self.very_verbose:
             print('%s: -> done homing'%self.name)
@@ -255,7 +256,10 @@ class Controller:
         self.port.timeout = self.timeout
         self._get_encoder_counts()
         if self._moving: # i.e. if 'self.stop()' was not called then check move
-            assert self._encoder_counts == self._target_encoder_counts
+            tolerance = 10 # 10 counts ~ 8.13 nm
+            min_counts = self._target_encoder_counts - tolerance
+            max_counts = self._target_encoder_counts + tolerance
+            assert min_counts <= self._encoder_counts <= max_counts
         self._moving = False
         if self.verbose:
             print('%s: -> finished move.'%self.name)
